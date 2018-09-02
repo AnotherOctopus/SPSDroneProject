@@ -1,6 +1,7 @@
 import numpy as np
 from pickle import dumps, loads
 import zlib
+from scipy.spatial import distance
 
 
 class PeopleData(object):
@@ -47,6 +48,72 @@ class PersonData(object):
 
     def getDest(self):
         raise Exception("IMPLEMENT THE GET DESDT FUNCTION IN YOUR MODEL")
+
+
+class Person(object):
+    def __init__(self, pos=np.array((0, 0)),
+                       vel=np.array((0, 0)),
+                       dest=np.array((0, 0)),
+                       orient=0.0):
+        if pos.shape != (2,):
+            raise ValueError("POS NOT CORRECT SHAPE", pos.shape)
+        if vel.shape != (2,):
+            raise ValueError("POS NOT CORRECT SHAPE")
+        if dest.shape != (2,):
+            raise ValueError("DEST NOT CORRECT SHAPE")
+        self._pos = pos
+        self._vel = vel
+        self._dest = dest
+        self._orient = orient
+
+    def __add__(self, other):
+        # I am defining addition as the euclidian distance
+        if (self.pos == other.pos).all():
+            raise Exception("People are directly on top of each other")
+        if type(other) != Person:
+            raise TypeError("YOU CAN ONLY ADD PEOPLE")
+        return distance.euclidean(self.pos, other.pos)
+
+    @property
+    def pos(self):
+        return self._pos
+    @property
+    def vel(self):
+        return self._vel
+    @property
+    def dest(self):
+        return self._dest
+    @property
+    def orient(self):
+        return self._orient
+
+    @pos.setter
+    def pos(self,val):
+        if val.shape != (2,):
+            raise ValueError("NOT CORRECT SHAPE")
+        self._pos = val
+
+    @vel.setter
+    def vel(self,val):
+        if val.shape != (2,):
+            raise ValueError("NOT CORRECT SHAPE")
+        self._vel = val
+
+    @dest.setter
+    def dest(self,val):
+        if val.shape != (2,):
+            raise ValueError("NOT CORRECT SHAPE" + str(val.shape))
+        self._dest = val
+
+    @orient.setter
+    def orient(self,val):
+        if type(val) != float:
+            raise TypeError("orient set shit")
+        self._orient = val
+
+    @property
+    def e_alpha(self):
+        return (self.dest-self.pos)/np.linalg.norm(self.dest-self.pos)
 
 
 def savepeopledata(filename,people):
