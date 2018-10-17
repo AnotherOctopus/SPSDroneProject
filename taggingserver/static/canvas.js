@@ -3,7 +3,7 @@ downX = 0,
 upX = 0,
 downY = 0,
 upY = 0;
-var  boxsize = 20;
+var  boxsize = 80;
 tags ={};
 
 function httpGet(theUrl)

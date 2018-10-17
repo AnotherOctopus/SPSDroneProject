@@ -2,14 +2,18 @@ package main
 
 import (
         "net/http"
-//        "log"
+        "log"
+	"hash/fnv"
         "os"
         "fmt"
         "gopkg.in/mgo.v2"
         "bytes"
         "gopkg.in/mgo.v2/bson"
         "strconv"
+	"math/rand"
+	"time"
 )
+
 type BB struct {
     ID int
     w []float64
@@ -17,7 +21,8 @@ type BB struct {
     Xpos []float64
     Ypos []float64
 }
-const imgdir = "./rawimg"
+const imgdir = "/media/cephalopodoverlord/CHARLES/dronevid/yolo/darknet/data/dronedata/rawset2"
+const numframes = 6835
 func parseToJson(body []byte)( *BB) {
     bb := new(BB)
     tr := bytes.Trim(body,"\x00")
@@ -65,7 +70,7 @@ func postresp(w http.ResponseWriter, r * http.Request) {
         session, _ := mgo.Dial("localhost")
         defer session.Close()
         session.SetMode(mgo.Monotonic, true)
-        c := session.DB("DroneTags").C("people")
+        c := session.DB("DroneTagsLight").C("people")
 
         exist := new(BB)
         //c.Update(bson.M{"id":taggedData.ID},taggedData)
@@ -75,39 +80,48 @@ func postresp(w http.ResponseWriter, r * http.Request) {
                 ReturnNew: true,
         }
         c.Find(bson.M{"id":taggedData.ID}).Apply(change,exist)
-        fmt.Printf("%v;%v;\n",r.RemoteAddr,len(taggedData.h))
+        log.Printf("%v;%v;\n",r.RemoteAddr,len(taggedData.h))
         http.ServeFile(w, r, "./static/thanks.html")
 }
-
+func randomImg()(id int, imagename string){
+	imgchunkvals := []int{0,608,1216,1824,2432,3040}
+	framenum := rand.Intn(numframes)
+	xval := imgchunkvals[rand.Intn(len(imgchunkvals))]
+	yval := imgchunkvals[rand.Intn(len(imgchunkvals))]
+	filename := fmt.Sprintf("frame%v/%v-%v.png",framenum,xval,yval)
+	h := fnv.New32a()
+	h.Write([]byte(filename))
+	return int(h.Sum32()), filename
+}
 func selectImg(dirname string)(ID string) {
         session, _ := mgo.Dial("localhost")
         defer session.Close()
-        c := session.DB("DroneTags").C("people")
-        imgnum := 0
+        c := session.DB("DroneTagsLight").C("people")
         exist := new(BB)
-        found := c.Find(bson.M{"id":imgnum}).One(exist)
-        _, err := os.Stat(fmt.Sprintf("%v/ID0%09v.jpg",dirname,imgnum));
-        for  os.IsNotExist(err) || found == nil{
-                imgnum += 1
-                found = c.Find(bson.M{"id":imgnum}).One(exist)
-                _, err = os.Stat(fmt.Sprintf("%v/ID0%09v.jpg",dirname,imgnum));
+	imgid,imgname := randomImg()
+        found := c.Find(bson.M{"id":imgid}).One(exist)
+        _, err := os.Stat(fmt.Sprintf("%v/%v",dirname,imgname));
+        for  err != nil || found == nil{
+		imgid,imgname = randomImg()
+		found = c.Find(bson.M{"id":imgid}).One(exist)
+		_, err = os.Stat(fmt.Sprintf("%v/%v",dirname,imgname));
         }
-        ret := strconv.Itoa(imgnum)
-        return ret
+        return imgname
 }
 func imgresp(w http.ResponseWriter, r * http.Request) {
-        imgid := selectImg(imgdir)
-        cookie1 := &http.Cookie{Name: "ID", Value: imgid, HttpOnly: false}
+        imgname := selectImg(imgdir)
+        cookie1 := &http.Cookie{Name: "ID", Value: imgname, HttpOnly: false}
         http.SetCookie(w, cookie1)
         w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
         w.Header().Set("Pragma","no-cache")
         w.Header().Set("Expires","0")
-        http.ServeFile(w, r, fmt.Sprintf("%v/ID0%09v.jpg",imgdir,imgid))
+        http.ServeFile(w, r, fmt.Sprintf("%v/%v",imgdir,imgname))
 }
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
         http.Handle("/", http.FileServer(http.Dir("./static")))
         http.Handle("/return", http.HandlerFunc(postresp))
         http.Handle("/frame.jpg", http.HandlerFunc(imgresp))
-        http.ListenAndServe(":3000", nil)
+        http.ListenAndServe(":80", nil)
 }
