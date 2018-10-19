@@ -27,6 +27,7 @@ func parseToJson(body []byte)( *BB) {
     bb := new(BB)
     tr := bytes.Trim(body,"\x00")
     sp := bytes.Split(tr, []byte("&"))
+    fmt.Println(string(body))
     for _,by := range sp{
         chunks := bytes.Split(by,[]byte("="))
         key := string(chunks[0])
@@ -93,7 +94,7 @@ func randomImg()(id int, imagename string){
 	h.Write([]byte(filename))
 	return int(h.Sum32()), filename
 }
-func selectImg(dirname string)(ID string) {
+func selectImg(dirname string)(ID string,idnum int) {
         session, _ := mgo.Dial("localhost")
         defer session.Close()
         c := session.DB("DroneTagsLight").C("people")
@@ -106,11 +107,12 @@ func selectImg(dirname string)(ID string) {
 		found = c.Find(bson.M{"id":imgid}).One(exist)
 		_, err = os.Stat(fmt.Sprintf("%v/%v",dirname,imgname));
         }
-        return imgname
+	log.Println(imgid)
+        return imgname,imgid
 }
 func imgresp(w http.ResponseWriter, r * http.Request) {
-        imgname := selectImg(imgdir)
-        cookie1 := &http.Cookie{Name: "ID", Value: imgname, HttpOnly: false}
+        imgname,imgnum := selectImg(imgdir)
+        cookie1 := &http.Cookie{Name: "ID", Value: fmt.Sprintf("%s",imgnum), HttpOnly: false}
         http.SetCookie(w, cookie1)
         w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
         w.Header().Set("Pragma","no-cache")

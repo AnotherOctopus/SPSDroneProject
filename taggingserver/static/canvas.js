@@ -24,6 +24,7 @@ function addbox (t,xpos,ypos,height,width){
 function init() {
     var reg = /\d+/g;
     cookdata = reg.exec( document.cookie);
+    console.log(cookdata);
     tags.ID = cookdata[0];
     tags.Xpos = [];
     tags.Ypos = [];
