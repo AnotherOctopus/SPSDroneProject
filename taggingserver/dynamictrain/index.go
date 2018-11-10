@@ -18,15 +18,16 @@ const backdir = "./notperson"
 func postresp(w http.ResponseWriter, r * http.Request) {
         bdy := make([]byte,r.ContentLength)
         r.Body.Read(bdy)
+        fmt.Println(string(bdy))
         srcimg := fmt.Sprintf("%v/%v",prospectdir,string(bdy[:r.ContentLength-2]))
         dstimg := fmt.Sprintf("%v/%v",backdir,string(bdy[:r.ContentLength-2]))
         if bdy[r.ContentLength-1] == '1'{
                 dstimg = fmt.Sprintf("%v/%v",persondir,string(bdy[:r.ContentLength-2]))
         }
-        fmt.Println( fmt.Sprintf("mv %v to %v",srcimg,dstimg))
+        fmt.Println(fmt.Sprintf("mv %v to %v",srcimg,dstimg))
         err := os.Rename(srcimg,dstimg)
         fmt.Println(err)
-        http.ServeFile(w, r, "./static/index.html")
+        w.Write([]byte("recv"))
 }
 func selectImg(imgdir string) string{
     files, err := ioutil.ReadDir(imgdir)
