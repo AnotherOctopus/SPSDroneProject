@@ -68,8 +68,6 @@ def NMS(boxes):
                         # areas - the interesection area
                         iou = interArea / union
                         # return the intersection over union value
-                        print boxA,boxB,iou
-                        cv2.waitKey(0)
                         return iou
 
                 ious = np.apply_along_axis(IOU,1,boxes[idx+1:,:])
