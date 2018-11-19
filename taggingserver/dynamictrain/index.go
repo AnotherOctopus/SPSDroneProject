@@ -26,6 +26,8 @@ func postresp(w http.ResponseWriter, r * http.Request) {
         }
         fmt.Println(fmt.Sprintf("mv %v to %v",srcimg,dstimg))
         err := os.Rename(srcimg,dstimg)
+        fmt.Println(time.Now())
+        fmt.Println(err)
         fmt.Println(err)
         w.Write([]byte("recv"))
 }

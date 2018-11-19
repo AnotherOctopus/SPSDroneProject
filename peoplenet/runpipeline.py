@@ -6,11 +6,16 @@ from scipy.misc import imread, imsave
 from skimage.transform import pyramid_gaussian
 from detectpeoplemodel import detectpeep
 from config import *
+import os
 
 STEP = 10
 MAXCONF = 65536
 font = cv2.FONT_HERSHEY_SIMPLEX
-IOUTHRESH = 0
+IOUTHRESH = 0.05
+propsectdir = "/home/cephalopodoverlord/DroneProject/SPSDroneProject/taggingserver/dynamictrain/prospective/"
+framedir = "/home/cephalopodoverlord/DroneProject/SPSDroneProject/peoplenet/dataset/rawsetframes/rawset2_stable"
+outframedir = "out"
+prospectid = 0
 # returns a compiled model
 # identical to the previous one
 def runframe(model,frame,wsize):
@@ -29,6 +34,7 @@ def runframe(model,frame,wsize):
                 data[:, yi] = model.predict(framebuffer)[:,0]
                 print "{} percent run".format(float(yi)/data.shape[1]*100)
         return data
+#2282
 def NMS(boxes):
         numboxesremoved = 0
         idx = 0
@@ -82,30 +88,33 @@ def NMS(boxes):
         return boxes[:-numboxesremoved]
 if __name__ == "__main__":
         model = load_model('netpeep.h5')
-        testfile = "/media/cephalopodoverlord/CHARLES/dronevid/rawset2/frame38.jpg"
-        rawimg = imread(testfile,mode='RGB')
-        X = rawimg.shape[0]
-        Y = rawimg.shape[1]
-        frame = rawimg.astype(np.float32)/255
-        frame = frame[np.newaxis,:]
-        confidence =  runframe(model,frame,80)
-        imageatscale = rawimg.copy()
+        imgcnt = 0
+        for frame in os.listdir(framedir):
+                testfile = os.path.join(framedir,frame)
+                rawimg = imread(testfile,mode='RGB')
+                X = rawimg.shape[0]
+                Y = rawimg.shape[1]
+                frame = rawimg.astype(np.float32)/255
+                frame = frame[np.newaxis,:]
+                confidence =  runframe(model,frame,80)
+                imageatscale = rawimg.copy()
 
-        bbwi = 80
-        confToPos = lambda x: (x*STEP)
+                bbwi = 80
+                confToPos = lambda x: (x*STEP)
 
-        threshedboxes = (confidence > 0.96 ).nonzero()
-        boxes = np.zeros((len(threshedboxes[0]),5))
-        for i, box in enumerate(threshedboxes[0]):
-                xidx = threshedboxes[1][i]
-                yidx = threshedboxes[0][i]
-                X = confToPos(xidx)
-                Y = confToPos(yidx)
-                boxes[i,:] = np.array([MAXCONF*(1-confidence[yidx][xidx]),X,Y,X+bbwi,Y+bbwi])
-        boxes  = boxes[boxes[:,0].argsort()]
-        boxes = NMS(boxes)
+                threshedboxes = (confidence > 0.90 ).nonzero()
+                boxes = np.zeros((len(threshedboxes[0]),5))
+                for i, box in enumerate(threshedboxes[0]):
+                        xidx = threshedboxes[1][i]
+                        yidx = threshedboxes[0][i]
+                        X = confToPos(xidx)
+                        Y = confToPos(yidx)
+                        boxes[i,:] = np.array([MAXCONF*(1-confidence[yidx][xidx]),X,Y,X+bbwi,Y+bbwi])
+                boxes  = boxes[boxes[:,0].argsort()]
+                boxes = NMS(boxes)
 
-        for box in boxes:
-                cv2.putText(imageatscale,str(int(box[0])),(int(box[1]),int(box[2])), font, 1,(0,0,0),2,cv2.LINE_AA)
-                imageatscale = cv2.rectangle(imageatscale,(int(box[1]),int(box[2])),(int(box[3]),int(box[4])),(255,0,0))
-        cv2.imwrite("out.png",imageatscale)
+                for box in boxes:
+                        cv2.putText(imageatscale,str(int(box[0])),(int(box[1]),int(box[2])), font, 1,(0,0,0),2,cv2.LINE_AA)
+                        imageatscale = cv2.rectangle(imageatscale,(int(box[1]),int(box[2])),(int(box[3]),int(box[4])),(255,0,0))
+                cv2.imwrite("out/out{}.png".format(str(imgcnt).zfill(4)),imageatscale)
+                imgcnt += 1

@@ -22,7 +22,7 @@ def trainnetpeep():
     nb_train_samples = len(os.listdir(train_data_dir +"/person")) + len(os.listdir(train_data_dir +"/notperson"))
     nb_validation_samples = len(os.listdir(validation_data_dir +"/notperson")) + len(os.listdir(validation_data_dir +"/notperson"))
     print nb_train_samples
-    n_epochs = 10
+    n_epochs = 20
     batch_size = 128
 
     if K.image_data_format() == 'channels_first':

@@ -7,7 +7,7 @@ from config import *
 from scipy.misc import imread,imsave
 from PIL import Image
 import sys
-datadir = "data/"
+
 datasetdir = "dataset/"
 def umdcsvtobb(datafile):
         tagfile = os.path.join(os.path.dirname(datafile),os.path.basename(datafile).split(".")[0]+".txt")
@@ -58,7 +58,7 @@ def displaybb(boundbox):
         cv2.imshow(image)
         cv2.waitKey(30)
 
-def preppeople(trainvalidratio=10):
+def preppeople(datadir, trainvalidratio=10):
         traindir = datadir + "train/"
         validdir = datadir + "valid/"
         datafile = "mlemtrain.txt"
@@ -73,7 +73,7 @@ def preppeople(trainvalidratio=10):
                 boxes = umdcsvtobb(dfile)
                 for box in boxes:
                         img = imread(box['filename'])
-                        padimg = np.zeros((img.shape[0]+pad,img.shape[1]+pad,img.shape[2]))
+                        padimg = np.ones((img.shape[0]+pad,img.shape[1]+pad,img.shape[2]))*255
                         padimg[pad/2:-pad/2,pad/2:-pad/2,:] = img
                         area = (int(round(box['xpos']-box['w']/2)),
                                 int(round(box['ypos']-box['h']/2)), 
@@ -118,12 +118,12 @@ def preppeople(trainvalidratio=10):
                         ids += 1
                         print("person",box)
 
-def prepback(numback,trainvalidratio=10):
+def prepback(datadir, numback,trainvalidratio=10):
         backgroundfeeddir = datasetdir + "background/"
         traindir = datadir + "train/"
         validdir = datadir + "valid/"
         bkgroundimgs = os.listdir(backgroundfeeddir)
-        picnum = 0
+        picnum = 20000
         for i in range(numback):
                 backimg = bkgroundimgs[picnum%len(bkgroundimgs)]
                 img = imread(os.path.join(backgroundfeeddir,backimg))
@@ -146,5 +146,5 @@ def prepback(numback,trainvalidratio=10):
                 picnum += 1
                 
 if __name__ == "__main__":
-        #preppeople(trainvalidratio=11)
-        prepback(20000,trainvalidratio=11)
+        preppeople("data/densedetectpeep", trainvalidratio=11)
+        #prepback("data/densedetectpeep", 10000,trainvalidratio=11)
